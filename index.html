@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Interview Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .box {
+            background: white;
+            padding: 25px;
+            width: 650px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s ease-in;
+        }
+        h2 {
+            text-align: center;
+        }
+        select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+        button {
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .answer {
+            margin-top: 15px;
+            background: #f1f5ff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .complete {
+            text-align: center;
+            font-size: 18px;
+            color: green;
+            margin-top: 20px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>🎤 AI Interview Practice</h2>
+
+    <label><strong>Select Role:</strong></label><br>
+    <select id="roleSelect" onchange="loadQuestions()">
+        <option value="">-- Choose Role --</option>
+        <option value="cse">CSE</option>
+        <option value="hr">HR</option>
+    </select>
+
+    <p style="margin-top:15px;"><strong>Question:</strong></p>
+    <p id="question">Select a role to start</p>
+
+    <button onclick="startRecording()">🎙️ Answer</button>
+    <button id="nextBtn" onclick="nextQuestion()">➡️ Next Question</button>
+
+    <div class="answer">
+        <strong>Your Answer:</strong>
+        <p id="output">Speak after clicking Answer...</p>
+    </div>
+
+    <div class="answer">
+    <strong>AI Feedback:</strong>
+    <p id="feedback">Waiting for evaluation...</p>
+    </div>
+
+
+    <div id="completeMsg" class="complete"></div>
+</div>
+
+<script>
+    const questions = {
+        cse: [
+            "What is an operating system?",
+            "Explain difference between process and thread.",
+            "What is normalization in DBMS?"
+        ],
+        hr: [
+            "Tell me about yourself.",
+            "What are your strengths?",
+            "Why should we hire you?"
+        ]
+    };
+
+    let currentRole = "";
+    let currentIndex = 0;
+
+    const questionBox = document.getElementById("question");
+    const output = document.getElementById("output");
+    const nextBtn = document.getElementById("nextBtn");
+    const completeMsg = document.getElementById("completeMsg");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+
+    function loadQuestions() {
+        currentRole = document.getElementById("roleSelect").value;
+        currentIndex = 0;
+        completeMsg.innerText = "";
+        nextBtn.style.display = "inline-block";
+        output.innerText = "Speak after clicking Answer...";
+        if (currentRole) {
+            questionBox.innerText = questions[currentRole][currentIndex];
+        }
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        output.innerText = "Speak after clicking Answer...";
+        if (currentIndex < questions[currentRole].length) {
+            questionBox.innerText = questions[currentRole][currentIndex];
+        } else {
+            questionBox.innerText = "🎉 Interview Completed";
+            nextBtn.style.display = "none";
+            completeMsg.innerText = "Great job! You’ve completed the interview.";
+        }
+    }
+
+    function startRecording() {
+        output.innerText = "Listening...";
+        recognition.start();
+    }
+
+    recognition.onresult = function(event) {
+    const spokenText = event.results[0][0].transcript;
+    output.innerText = spokenText;
+
+    // SEND answer to backend
+    fetch("http://127.0.0.1:5000/evaluate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+       body: JSON.stringify({
+        role: currentRole,
+        question: questionBox.innerText,
+        answer: spokenText
+    })
+
+    })
+    .then(response => response.json())
+    .then(data => {
+    console.log("Backend response:", data);
+    document.getElementById("feedback").innerText = data.feedback;
+    })
+
+    .catch(error => {
+        console.error("Fetch error:", error);
+    });
+};
+
+</script>
+
+</body>
+</html>
