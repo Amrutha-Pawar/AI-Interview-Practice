@@ -146,7 +146,7 @@
     output.innerText = spokenText;
 
     // SEND answer to backend
-    fetch("http://127.0.0.1:5000/evaluate", {
+    fetch("/evaluate", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
